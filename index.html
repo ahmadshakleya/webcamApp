@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Photo App</title>
+</head>
+<body>
+    <h1>Webcam Photo App</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="startButton">Start Webcam</button>
+    <button id="takePhotoButton">Take Photo</button>
+    <div id="gallery">
+        <h2>Photo Gallery</h2>
+        <!-- Display uploaded photos here -->
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const startButton = document.getElementById('startButton');
+        const takePhotoButton = document.getElementById('takePhotoButton');
+        const gallery = document.getElementById('gallery');
+        // Add this code after initializing the 'gallery' variable
+        fetch('/photos')
+            .then(response => response.json())
+            .then(data => {
+                data.photos.forEach(filename => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = `/photos/${filename}`;
+
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/download/${filename}`;
+                    downloadLink.target = '_blank';
+                    downloadLink.download = filename;
+                    downloadLink.innerText = 'Download';
+
+                    gallery.appendChild(imgElement);
+                    gallery.appendChild(downloadLink);
+                });
+            });
+
+        let stream;
+        let mediaRecorder;
+        const recordedChunks = [];
+
+        // Check for webcam support
+        if (navigator.mediaDevices.getUserMedia) {
+            startButton.addEventListener('click', async () => {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = stream;
+                    startButton.disabled = true;
+                    takePhotoButton.disabled = false;
+                } catch (error) {
+                    console.error('Error accessing webcam:', error);
+                }
+            });
+
+            // ...
+        takePhotoButton.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imgData = canvas.toDataURL('image/png');
+            recordedChunks.push(imgData);
+
+            // Display the photo in the gallery
+            const imgElement = document.createElement('img');
+            imgElement.src = imgData;
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imgData;
+            downloadLink.target = '_blank';
+            downloadLink.download = 'photo.png';
+            downloadLink.innerText = 'Download';
+
+            gallery.appendChild(imgElement);
+            gallery.appendChild(downloadLink);
+        });
+        } else {
+            console.error('Webcam not supported');
+        }
+    </script>
+</body>
+</html>
